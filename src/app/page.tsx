@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, FileText, CalendarPlus, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import { SyllabusUpload } from '@/components/SyllabusUpload';
 import { DatePreview, type ExtractedDate } from '@/components/DatePreview';
 import { processSyllabus } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { TamuLogo } from '@/components/icons/TamuLogo';
 
 type AppStep = 'upload' | 'loading' | 'preview' | 'error';
 
@@ -28,7 +29,7 @@ export default function Home() {
       setStep('preview');
       toast({
         title: 'Syllabus Analyzed!',
-        description: 'We\'ve extracted the key dates from your document.',
+        description: "We've extracted the key dates from your document.",
         variant: 'default',
         className: 'bg-green-600 text-white border-green-700',
       });
@@ -54,7 +55,7 @@ export default function Home() {
       className: 'bg-green-600 text-white border-green-700',
     });
   };
-  
+
   const renderStep = () => {
     switch (step) {
       case 'loading':
@@ -88,7 +89,7 @@ export default function Home() {
           </motion.div>
         );
       case 'error':
-         return (
+        return (
           <motion.div
             key="error"
             initial={{ opacity: 0, y: 20 }}
@@ -124,27 +125,24 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-background text-foreground">
-       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-background via-background to-primary/10 -z-10"></div>
-
-      <header className="text-center mb-8">
-        <h1 className="text-4xl sm:text-5xl font-bold text-primary font-headline tracking-tight">
-          Syllabus-to-Schedule
-        </h1>
-        <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Never miss a deadline again. Upload your syllabus and let AI organize your semester.
-        </p>
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-black via-primary/50 to-background -z-10"></div>
+      
+      <header className="p-8">
+        <TamuLogo className="text-white" />
+        <h2 className="text-white/80 text-lg mt-4 tracking-widest font-light uppercase">Texas A&M University</h2>
+        <h1 className="text-white text-4xl font-medium">Engineering</h1>
       </header>
-      
-      <div className="w-full flex justify-center">
-        <AnimatePresence mode="wait">
-          {renderStep()}
-        </AnimatePresence>
-      </div>
-      
-      <footer className="mt-12 text-center text-sm text-muted-foreground">
+
+      <main className="flex flex-col flex-grow items-center justify-center p-4 sm:p-8">
+        <div className="w-full flex justify-center">
+          <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
+        </div>
+      </main>
+
+      <footer className="w-full text-center p-4 text-sm text-muted-foreground">
         <p>Built for students, by students (and some clever AI).</p>
       </footer>
-    </main>
+    </div>
   );
 }
