@@ -8,7 +8,6 @@ import { DatePreview, type ExtractedDate } from '@/components/DatePreview';
 import { processSyllabus } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { TamuLogo } from '@/components/icons/TamuLogo';
 
 type AppStep = 'upload' | 'loading' | 'preview' | 'error';
 
@@ -127,12 +126,6 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-black via-primary/50 to-background -z-10"></div>
-      
-      <header className="p-8">
-        <TamuLogo className="text-white" />
-        <h2 className="text-white/80 text-lg mt-4 tracking-widest font-light uppercase">Texas A&M University</h2>
-        <h1 className="text-white text-4xl font-medium">Engineering</h1>
-      </header>
 
       <main className="flex flex-col flex-grow items-center justify-center p-4 sm:p-8">
         <div className="w-full flex justify-center">
