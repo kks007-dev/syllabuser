@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { SyllabusUpload } from '@/components/SyllabusUpload';
@@ -18,6 +18,12 @@ export default function Home() {
   const [fileName, setFileName] = useState<string>('');
   const [courseName, setCourseName] = useState<string>('Syllabus Events');
   const { toast } = useToast();
+  const [userName, setUserName] = useState<string>('');
+  const [nameSubmitted, setNameSubmitted] = useState<boolean>(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [typedName, setTypedName] = useState('');
+  const [typing, setTyping] = useState(false);
 
   // Handle authentication success/error from URL params
   useEffect(() => {
@@ -77,6 +83,49 @@ export default function Home() {
       window.history.replaceState({}, '', url.toString());
     }
   }, [toast]);
+
+  // Load name from localStorage if present
+  useEffect(() => {
+    const storedName = localStorage.getItem('user_name');
+    if (storedName) {
+      setUserName(storedName);
+      setNameSubmitted(true);
+      setShowWelcome(true);
+    }
+  }, []);
+
+  // Typewriter effect for greeting
+  useEffect(() => {
+    if (nameSubmitted && userName && !showWelcome) {
+      setTyping(true);
+      let i = 0;
+      setTypedName('');
+      const interval = setInterval(() => {
+        setTypedName((prev) => prev + userName[i]);
+        i++;
+        if (i >= userName.length) {
+          clearInterval(interval);
+          setTyping(false);
+          setTimeout(() => setShowWelcome(true), 400);
+        }
+      }, 80);
+      return () => clearInterval(interval);
+    }
+  }, [nameSubmitted, userName, showWelcome]);
+
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userName.trim().length > 0) {
+      setNameSubmitted(true);
+      localStorage.setItem('user_name', userName.trim());
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleNameSubmit(e as any);
+    }
+  };
 
   const handleFileUpload = async (file: File) => {
     setStep('loading');
@@ -200,7 +249,56 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-black via-primary/50 to-background -z-10"></div>
 
-      <main className="flex flex-col flex-grow items-center justify-center p-4 sm:p-8">
+      {/* Dashboard Header */}
+      <div className="w-full flex flex-col items-center py-8 mb-8">
+        <div className="max-w-2xl w-full px-4 text-center">
+          {!nameSubmitted ? (
+            <form onSubmit={handleNameSubmit} className="flex flex-col items-center gap-4">
+              <label htmlFor="user_name" className="text-2xl font-bold">What's your name?</label>
+              <input
+                id="user_name"
+                type="text"
+                value={userName}
+                onChange={e => setUserName(e.target.value)}
+                className="px-4 py-2 rounded-lg border border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary text-lg bg-background text-foreground"
+                placeholder="Enter your name"
+                autoFocus
+                ref={inputRef}
+                onKeyDown={handleInputKeyDown}
+              />
+            </form>
+          ) : (
+            <>
+              <motion.h1
+                className="text-3xl sm:text-4xl font-bold mb-1"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7 }}
+              >
+                Hey{' '}
+                <span className="text-white">
+                  {typing ? <span>{typedName}<span className="animate-pulse">|</span></span> : userName}
+                </span>{' '}👋
+              </motion.h1>
+              <AnimatePresence>
+                {showWelcome && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.7 }}
+                  >
+                    <p className="text-lg text-muted-foreground mb-2">Welcome to your Syllabus-to-Schedule Dashboard.</p>
+                    <p className="text-base text-muted-foreground">Upload your syllabus below and let AI extract all your important dates. Then, sync them to your Google Calendar in one click!</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+        </div>
+      </div>
+
+      <main className="flex flex-col flex-grow items-center justify-center  ">
         <div className="w-full flex justify-center">
           <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
         </div>
