@@ -28,15 +28,25 @@ export async function GET(request: Request) {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // TODO: Securely store the tokens (access_token, refresh_token, expiry_date)
-    // In a real application, you would associate these tokens with a user in your database.
-    console.log('Successfully obtained tokens:', tokens);
+    // Redirect back to the main page with tokens in URL params for client-side storage
+    const redirectUrl = new URL('/', url.origin);
+    redirectUrl.searchParams.set('auth_success', 'true');
+    redirectUrl.searchParams.set('access_token', tokens.access_token || '');
+    if (tokens.refresh_token) {
+      redirectUrl.searchParams.set('refresh_token', tokens.refresh_token);
+    }
+    redirectUrl.searchParams.set('scope', tokens.scope || '');
+    redirectUrl.searchParams.set('token_type', tokens.token_type || '');
+    if (tokens.expiry_date) {
+      redirectUrl.searchParams.set('expiry_date', tokens.expiry_date.toString());
+    }
 
-    // Redirect the user back to the main page or a success page
-    return NextResponse.redirect(new URL('/', url.origin));
+    return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
     console.error('Error exchanging authorization code for tokens:', error);
-    return NextResponse.json({ error: 'Authentication failed.' }, { status: 500 });
+    const errorUrl = new URL('/', url.origin);
+    errorUrl.searchParams.set('auth_error', 'true');
+    return NextResponse.redirect(errorUrl);
   }
 }

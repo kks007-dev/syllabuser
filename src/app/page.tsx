@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { SyllabusUpload } from '@/components/SyllabusUpload';
@@ -16,24 +16,96 @@ export default function Home() {
   const [extractedDates, setExtractedDates] = useState<ExtractedDate[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
+  const [courseName, setCourseName] = useState<string>('Syllabus Events');
   const { toast } = useToast();
+
+  // Handle authentication success/error from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authSuccess = urlParams.get('auth_success');
+    const authError = urlParams.get('auth_error');
+
+    if (authSuccess === 'true') {
+      // Store tokens from URL params
+      const tokens = {
+        access_token: urlParams.get('access_token') || '',
+        refresh_token: urlParams.get('refresh_token') || undefined,
+        scope: urlParams.get('scope') || '',
+        token_type: urlParams.get('token_type') || '',
+        expiry_date: urlParams.get('expiry_date') ? parseInt(urlParams.get('expiry_date')!) : undefined,
+      };
+
+      if (tokens.access_token) {
+        localStorage.setItem('google_tokens', JSON.stringify(tokens));
+        toast({
+          title: 'Google Calendar Connected!',
+          description: 'You can now add events to your calendar.',
+          variant: 'default',
+          className: 'bg-green-600 text-white border-green-700',
+        });
+      }
+
+      // Restore pending events if present
+      const pendingEvents = localStorage.getItem('pending_events');
+      const pendingFileName = localStorage.getItem('pending_file_name');
+      const pendingCourseName = localStorage.getItem('pending_course_name');
+      if (pendingEvents && pendingFileName) {
+        setExtractedDates(JSON.parse(pendingEvents));
+        setFileName(pendingFileName);
+        setCourseName(pendingCourseName || 'Syllabus Events');
+        setStep('preview');
+        // Clean up
+        localStorage.removeItem('pending_events');
+        localStorage.removeItem('pending_file_name');
+        localStorage.removeItem('pending_course_name');
+      }
+
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.replaceState({}, '', url.toString());
+    } else if (authError === 'true') {
+      toast({
+        title: 'Authentication Failed',
+        description: 'Failed to connect to Google Calendar. Please try again.',
+        variant: 'destructive',
+      });
+
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [toast]);
 
   const handleFileUpload = async (file: File) => {
     setStep('loading');
     setError(null);
     setFileName(file.name);
-    const result = await processSyllabus(file.name);
-    if (result.success) {
-      setExtractedDates(result.data);
-      setStep('preview');
-      toast({
-        title: 'Syllabus Analyzed!',
-        description: "We've extracted the key dates from your document.",
-        variant: 'default',
-        className: 'bg-green-600 text-white border-green-700',
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/syllabus/analyze', {
+        method: 'POST',
+        body: formData,
       });
-    } else {
-      setError(result.error);
+      const result = await response.json();
+      if (result.success) {
+        setExtractedDates(result.data);
+        setCourseName(result.courseName || 'Syllabus Events');
+        setStep('preview');
+        toast({
+          title: 'Syllabus Analyzed!',
+          description: "We've extracted the key dates from your document.",
+          variant: 'default',
+          className: 'bg-green-600 text-white border-green-700',
+        });
+      } else {
+        setError(result.error);
+        setStep('error');
+      }
+    } catch (error) {
+      setError('Failed to analyze the syllabus.');
       setStep('error');
     }
   };
@@ -84,6 +156,7 @@ export default function Home() {
               onAddToCalendar={handleAddToCalendar}
               onReset={handleReset}
               fileName={fileName}
+              courseName={courseName}
             />
           </motion.div>
         );
