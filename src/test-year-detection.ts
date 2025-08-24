@@ -6,10 +6,10 @@ import { extractDatesFromSyllabus } from './ai/flows/extract-dates-from-syllabus
 
 const sampleSyllabusTexts = [
   {
-    name: 'Fall 2024 Syllabus',
+    name: 'Fall 2025 Syllabus (Current)',
     text: `
     ENGR 1300: Introduction to Engineering
-    Fall 2024 Semester
+    Fall 2025 Semester
     
     Important Dates:
     - First day of class: August 28
@@ -20,10 +20,10 @@ const sampleSyllabusTexts = [
     `
   },
   {
-    name: 'Spring 2025 Syllabus',
+    name: 'Spring 2026 Syllabus',
     text: `
     CS 101: Computer Science Fundamentals
-    Spring 2025
+    Spring 2026
     
     Schedule:
     - Classes begin: January 15
@@ -33,10 +33,10 @@ const sampleSyllabusTexts = [
     `
   },
   {
-    name: 'Academic Year 2024-2025 Syllabus',
+    name: 'Academic Year 2025-2026 Syllabus',
     text: `
     MATH 201: Calculus II
-    Academic Year 2024-2025
+    Academic Year 2025-2026
     
     Fall Semester Events:
     - First quiz: September 20
@@ -45,6 +45,19 @@ const sampleSyllabusTexts = [
     Spring Semester Events:
     - Second midterm: March 12
     - Final exam: May 15
+    `
+  },
+  {
+    name: 'No Explicit Year Syllabus (Should default to 2025-2026)',
+    text: `
+    PHYS 101: Physics Fundamentals
+    Fall Semester
+    
+    Important Dates:
+    - Lab begins: September 5
+    - First test: October 10
+    - Project due: November 20
+    - Final exam: December 15
     `
   }
 ];
