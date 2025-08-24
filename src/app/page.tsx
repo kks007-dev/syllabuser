@@ -206,6 +206,7 @@ export default function Home() {
               onReset={handleReset}
               fileName={fileName}
               courseName={courseName}
+              onDatesChange={setExtractedDates}
             />
           </motion.div>
         );

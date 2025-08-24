@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GoogleCalendarIcon } from '@/components/icons/GoogleCalendarIcon';
-import { Check, Link, UploadCloud, AlertCircle } from 'lucide-react';
+import { Check, Link, UploadCloud, AlertCircle, Edit2, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface ExtractedDate {
@@ -22,19 +24,64 @@ interface DatePreviewProps {
   onAddToCalendar: () => void;
   onReset: () => void;
   courseName: string;
+  onDatesChange?: (updatedDates: ExtractedDate[]) => void;
 }
 
-export function DatePreview({ dates, fileName, onAddToCalendar, onReset, courseName }: DatePreviewProps) {
+export function DatePreview({ dates, fileName, onAddToCalendar, onReset, courseName, onDatesChange }: DatePreviewProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editedEvent, setEditedEvent] = useState<ExtractedDate | null>(null);
+  const [localDates, setLocalDates] = useState<ExtractedDate[]>(dates);
   const { toast } = useToast();
   
   const handleConnect = () => {
     // Save extracted events, file name, and course name to localStorage
-    localStorage.setItem('pending_events', JSON.stringify(dates));
+    localStorage.setItem('pending_events', JSON.stringify(localDates));
     localStorage.setItem('pending_file_name', fileName);
     localStorage.setItem('pending_course_name', courseName);
     window.location.href = '/api/auth/google';
+  };
+
+  const handleEditStart = (index: number) => {
+    setEditingIndex(index);
+    setEditedEvent({ ...localDates[index] });
+  };
+
+  const handleEditSave = () => {
+    if (editingIndex !== null && editedEvent) {
+      const updatedDates = [...localDates];
+      updatedDates[editingIndex] = editedEvent;
+      setLocalDates(updatedDates);
+      if (onDatesChange) {
+        onDatesChange(updatedDates);
+      }
+      setEditingIndex(null);
+      setEditedEvent(null);
+      toast({
+        title: 'Event Updated',
+        description: 'The event has been successfully updated.',
+        variant: 'default',
+      });
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingIndex(null);
+    setEditedEvent(null);
+  };
+
+  const handleDeleteEvent = (index: number) => {
+    const updatedDates = localDates.filter((_, i) => i !== index);
+    setLocalDates(updatedDates);
+    if (onDatesChange) {
+      onDatesChange(updatedDates);
+    }
+    toast({
+      title: 'Event Deleted',
+      description: 'The event has been removed from the list.',
+      variant: 'default',
+    });
   };
 
   const handleAddEvents = async () => {
@@ -57,7 +104,7 @@ export function DatePreview({ dates, fileName, onAddToCalendar, onReset, courseN
       }
 
       // Convert dates to calendar events
-      const events = dates.map(date => ({
+      const events = localDates.map(date => ({
         summary: `${date.type}: ${date.description}`,
         description: `From syllabus: ${fileName}`,
         start: {
@@ -170,16 +217,80 @@ export function DatePreview({ dates, fileName, onAddToCalendar, onReset, courseN
                     <TableHead>Date</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {dates.map((item, index) => (
+                    {localDates.map((item, index) => (
                     <TableRow key={index}>
-                        <TableCell className="font-medium whitespace-nowrap">{format(new Date(item.date), 'EEE, MMM d, yyyy')}</TableCell>
-                        <TableCell>
-                        <Badge variant={getBadgeVariant(item.type)}>{item.type}</Badge>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {editingIndex === index ? (
+                            <Input
+                              type="date"
+                              value={editedEvent?.date || ''}
+                              onChange={(e) => setEditedEvent(prev => prev ? { ...prev, date: e.target.value } : null)}
+                              className="w-40"
+                            />
+                          ) : (
+                            format(new Date(item.date), 'EEE, MMM d, yyyy')
+                          )}
                         </TableCell>
-                        <TableCell>{item.description}</TableCell>
+                        <TableCell>
+                          {editingIndex === index ? (
+                            <Select
+                              value={editedEvent?.type || ''}
+                              onValueChange={(value) => setEditedEvent(prev => prev ? { ...prev, type: value } : null)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="assignment">Assignment</SelectItem>
+                                <SelectItem value="test">Test</SelectItem>
+                                <SelectItem value="exam">Exam</SelectItem>
+                                <SelectItem value="quiz">Quiz</SelectItem>
+                                <SelectItem value="project">Project</SelectItem>
+                                <SelectItem value="presentation">Presentation</SelectItem>
+                                <SelectItem value="holiday">Holiday</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant={getBadgeVariant(item.type)}>{item.type}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingIndex === index ? (
+                            <Input
+                              value={editedEvent?.description || ''}
+                              onChange={(e) => setEditedEvent(prev => prev ? { ...prev, description: e.target.value } : null)}
+                              className="min-w-48"
+                            />
+                          ) : (
+                            item.description
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingIndex === index ? (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" onClick={handleEditSave}>
+                                <Save className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={handleEditCancel}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" onClick={() => handleEditStart(index)}>
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteEvent(index)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
                     </TableRow>
                     ))}
                 </TableBody>
@@ -187,7 +298,7 @@ export function DatePreview({ dates, fileName, onAddToCalendar, onReset, courseN
         </div>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/50 p-6 rounded-b-lg">
-        <p className="text-sm text-muted-foreground">{dates.length} events found. Ready to add them to your calendar?</p>
+        <p className="text-sm text-muted-foreground">{localDates.length} events found. Ready to add them to your calendar?</p>
         
         {authError && (
           <div className="w-full mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
